@@ -9,7 +9,8 @@ ENV APP_ENV=${APP_ENV}
 
 WORKDIR /app
 
-COPY .. ./
+# Copy application source from build context
+COPY . /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git unzip libzip-dev libpng-dev libjpeg-dev libwebp-dev libfreetype6-dev \
@@ -33,7 +34,8 @@ RUN groupadd -g ${GID} app \
  && mkdir -p /app /var/log/php \
  && chown -R app:app /app /var/log/php
 
-COPY php-fpm.conf /usr/local/etc/php-fpm.conf
+# Copy FPM config from project tree (build context is project root)
+COPY ./.docker/php/php-fpm.conf /usr/local/etc/php-fpm.conf
 
 ENV COMPOSER_HOME=/app/.composer
 
