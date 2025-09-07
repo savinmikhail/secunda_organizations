@@ -33,7 +33,7 @@ RUN groupadd -g ${GID} app \
  && mkdir -p /app /var/log/php \
  && chown -R app:app /app /var/log/php
 
-COPY .docker/php-fpm.conf /usr/local/etc/php-fpm.conf
+COPY php-fpm.conf /usr/local/etc/php-fpm.conf
 
 ENV COMPOSER_HOME=/app/.composer
 
