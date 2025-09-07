@@ -24,4 +24,9 @@ class Organization extends Model
     {
         return $this->hasMany(OrganizationPhone::class);
     }
+
+    public function activities()
+    {
+        return $this->belongsToMany(Activity::class, 'activity_organization');
+    }
 }
