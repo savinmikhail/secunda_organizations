@@ -42,4 +42,3 @@ class OrganizationsSearchByNameTest extends TestCase
             ->assertStatus(422);
     }
 }
-

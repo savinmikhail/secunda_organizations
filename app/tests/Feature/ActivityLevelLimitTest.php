@@ -30,4 +30,3 @@ class ActivityLevelLimitTest extends TestCase
         Activity::create(['name' => 'Level4', 'parent_id' => $l3->id]);
     }
 }
-

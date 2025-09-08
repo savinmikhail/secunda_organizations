@@ -34,7 +34,8 @@ class OrganizationsByGeoTest extends TestCase
 
     public function test_radius_filters_organizations(): void
     {
-        $centerLat = 55.0000; $centerLng = 37.0000;
+        $centerLat = 55.0000;
+        $centerLng = 37.0000;
         $b1 = Building::factory()->create(['latitude' => $centerLat, 'longitude' => $centerLng]);
         // ~1.11 km north
         $b2 = Building::factory()->create(['latitude' => 55.0100, 'longitude' => 37.0000]);

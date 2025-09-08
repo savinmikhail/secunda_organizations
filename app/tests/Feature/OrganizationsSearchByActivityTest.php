@@ -38,4 +38,3 @@ class OrganizationsSearchByActivityTest extends TestCase
         $res->assertOk()->assertJsonCount(0, 'data');
     }
 }
-

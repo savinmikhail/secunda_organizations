@@ -35,4 +35,3 @@ class BuildingsIndexTest extends TestCase
             ->assertJsonPath('meta.per_page', 10);
     }
 }
-
