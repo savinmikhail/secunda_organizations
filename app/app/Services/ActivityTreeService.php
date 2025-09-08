@@ -16,10 +16,10 @@ class ActivityTreeService
         $all = [$activityId];
         $frontier = [$activityId];
 
-        while (!empty($frontier)) {
+        while ($frontier !== []) {
             $children = Activity::whereIn('parent_id', $frontier)->pluck('id')->all();
-            $children = array_values(array_diff($children, $all));
-            if (empty($children)) {
+            $children = array_values(array: array_diff($children, $all));
+            if ($children === []) {
                 break;
             }
             $all = array_merge($all, $children);

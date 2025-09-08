@@ -10,7 +10,7 @@ class BuildingController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = (int) $request->query('per_page', 15);
+        $perPage = (int) $request->query(key: 'per_page', default: 15);
         if ($perPage < 1) {
             $perPage = 15;
         }
@@ -20,9 +20,9 @@ class BuildingController extends Controller
 
         $buildings = Building::query()
             ->orderBy('address')
-            ->paginate($perPage)
-            ->appends($request->query());
+            ->paginate(perPage: $perPage)
+            ->appends(key: $request->query());
 
-        return BuildingResource::collection($buildings);
+        return BuildingResource::collection(resource: $buildings);
     }
 }

@@ -21,28 +21,28 @@ class OrganizationSearchService
 
         $query = $this->baseQuery()
             ->whereBetween('buildings.latitude', [$minLat, $maxLat])
-            ->whereBetween('buildings.longitude', [$minLng, $maxLng])
-            ->orderBy('organizations.name');
+            ->whereBetween(column: 'buildings.longitude', values: [$minLng, $maxLng])
+            ->orderBy(column: 'organizations.name');
 
-        return $query->paginate($perPage)->appends($request->query());
+        return $query->paginate(perPage: $perPage)->appends(key: $request->query());
     }
 
     public function withinRadius(Request $request, float $lat, float $lng, float $radiusKm, int $perPage = 15): LengthAwarePaginator
     {
-        $expr = $this->haversineSqlNumeric($lat, $lng);
+        $expr = $this->haversineSqlNumeric(lat: $lat, lng: $lng);
 
         $query = $this->baseQuery()
             ->selectRaw("{$expr} AS distance_km")
-            ->whereRaw("{$expr} <= ?", [$radiusKm])
-            ->orderByRaw("{$expr} ASC")
-            ->orderBy('organizations.name');
+            ->whereRaw(sql: "{$expr} <= ?", bindings: [$radiusKm])
+            ->orderByRaw(sql: "{$expr} ASC")
+            ->orderBy(column: 'organizations.name');
 
-        return $query->paginate($perPage)->appends($request->query());
+        return $query->paginate(perPage: $perPage)->appends(key: $request->query());
     }
 
     public function perPage(Request $request): int
     {
-        $perPage = (int) $request->query('per_page', 15);
+        $perPage = (int) $request->query(key: 'per_page', default: 15);
         if ($perPage < 1) {
             $perPage = 15;
         }
@@ -54,73 +54,73 @@ class OrganizationSearchService
 
     public function byBuilding(Request $request, int $buildingId, int $perPage = 15): LengthAwarePaginator
     {
-        return Organization::with(['phones', 'activities'])
-            ->where('building_id', $buildingId)
+        return Organization::with(relations: ['phones', 'activities'])
+            ->where(column: 'building_id', operator: $buildingId)
             ->orderBy('name')
-            ->paginate($perPage)
-            ->appends($request->query());
+            ->paginate(perPage: $perPage)
+            ->appends(key: $request->query());
     }
 
     public function byActivityIds(Request $request, array $ids, int $perPage = 15): LengthAwarePaginator
     {
-        return Organization::with(['phones', 'activities'])
-            ->whereHas('activities', function ($q) use ($ids) {
+        return Organization::with(relations: ['phones', 'activities'])
+            ->whereHas(relation: 'activities', callback: function ($q) use ($ids) {
                 $q->whereIn('activities.id', $ids);
             })
             ->orderBy('name')
-            ->paginate($perPage)
-            ->appends($request->query());
+            ->paginate(perPage: $perPage)
+            ->appends(key: $request->query());
     }
 
     public function searchByActivityName(Request $request, string $q, \App\Services\ActivityTreeService $tree, int $perPage = 15): LengthAwarePaginator
     {
         $matched = Activity::query()
             ->when(DB::getDriverName() === 'pgsql', function ($query) use ($q) {
-                $query->where('name', 'ILIKE', '%'.$q.'%');
+                $query->where(column: 'name', operator: 'ILIKE', value: '%'.$q.'%');
             }, function ($query) use ($q) {
-                $query->where('name', 'like', '%'.$q.'%');
+                $query->where(column: 'name', operator: 'like', value: '%'.$q.'%');
             })
             ->pluck('id')
             ->all();
 
         if (empty($matched)) {
-            return Organization::query()->whereRaw('1 = 0')->paginate($perPage)->appends($request->query());
+            return Organization::query()->whereRaw('1 = 0')->paginate(perPage: $perPage)->appends(key: $request->query());
         }
 
         $ids = [];
         foreach ($matched as $id) {
-            $ids = array_merge($ids, $tree->descendantIds((int) $id));
+            $ids = array_merge($ids, $tree->descendantIds(activityId: (int) $id));
         }
-        $ids = array_values(array_unique($ids));
+        $ids = array_values(array: array_unique(array: $ids));
 
-        return $this->byActivityIds($request, $ids, $perPage);
+        return $this->byActivityIds(request: $request, ids: $ids, perPage: $perPage);
     }
 
     public function searchByName(Request $request, string $q, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Organization::with(['phones', 'activities']);
+        $query = Organization::with(relations: ['phones', 'activities']);
 
         if ($this->hasPgTrgm()) {
-            $query->where(function ($sub) use ($q) {
+            $query->where(column: function ($sub) use ($q) {
                 $sub->whereRaw('name % ?', [$q])
-                    ->orWhereRaw('name ILIKE ?', ['%'.$q.'%']);
+                    ->orWhereRaw(sql: 'name ILIKE ?', bindings: ['%'.$q.'%']);
             })
             ->orderByRaw('similarity(name, ?) DESC, name ASC', [$q]);
         } else {
-            $needle = mb_strtolower($q, 'UTF-8');
+            $needle = mb_strtolower(string: $q, encoding: 'UTF-8');
             $query->whereRaw('LOWER(name) LIKE ?', ['%'.$needle.'%'])
-                  ->orderBy('name');
+                  ->orderBy(column: 'name');
         }
 
-        return $query->paginate($perPage)->appends($request->query());
+        return $query->paginate(perPage: $perPage)->appends(key: $request->query());
     }
 
     private function baseQuery(): EloquentBuilder
     {
         return Organization::query()
-            ->with(['phones', 'activities', 'building'])
+            ->with(relations: ['phones', 'activities', 'building'])
             ->join('buildings', 'buildings.id', '=', 'organizations.building_id')
-            ->select('organizations.*');
+            ->select(columns: 'organizations.*');
     }
 
     /**
@@ -147,9 +147,9 @@ class OrganizationSearchService
     private function haversineSqlNumeric(float $lat, float $lng): string
     {
         // ensure decimals with dot
-        $latS = number_format($lat, 8, '.', '');
-        $lngS = number_format($lng, 8, '.', '');
-        return $this->haversineSql($latS, $lngS);
+        $latS = number_format(num: $lat, decimals: 8, thousands_separator: '');
+        $lngS = number_format(num: $lng, decimals: 8, thousands_separator: '');
+        return $this->haversineSql(latParam: $latS, lngParam: $lngS);
     }
 
     private function hasPgTrgm(): bool

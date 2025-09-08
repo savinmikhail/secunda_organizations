@@ -18,14 +18,14 @@ class OrganizationController extends Controller
      */
     public function indexByBuilding(Request $request, int $building, \App\Services\OrganizationSearchService $search)
     {
-        $perPage = $search->perPage($request);
-        $organizations = $search->byBuilding($request, $building, $perPage);
+        $perPage = $search->perPage(request: $request);
+        $organizations = $search->byBuilding(request: $request, buildingId: $building, perPage: $perPage);
 
         if ($organizations->isEmpty() && ! Building::whereKey($building)->exists()) {
-            abort(404);
+            abort(code: 404);
         }
 
-        return OrganizationResource::collection($organizations);
+        return OrganizationResource::collection(resource: $organizations);
     }
 
     /**
@@ -33,15 +33,15 @@ class OrganizationController extends Controller
      */
     public function indexByActivity(Request $request, int $activity, \App\Services\OrganizationSearchService $search, \App\Services\ActivityTreeService $tree)
     {
-        $perPage = $search->perPage($request);
-        $activityIds = $tree->descendantIds($activity);
-        $organizations = $search->byActivityIds($request, $activityIds, $perPage);
+        $perPage = $search->perPage(request: $request);
+        $activityIds = $tree->descendantIds(activityId: $activity);
+        $organizations = $search->byActivityIds(request: $request, ids: $activityIds, perPage: $perPage);
 
         if ($organizations->isEmpty() && ! Activity::whereKey($activity)->exists()) {
-            abort(404);
+            abort(code: 404);
         }
 
-        return OrganizationResource::collection($organizations);
+        return OrganizationResource::collection(resource: $organizations);
     }
 
     // Descendant collecting moved to ActivityTreeService
@@ -55,26 +55,26 @@ class OrganizationController extends Controller
      */
     public function indexByGeo(Request $request, OrganizationSearchService $search)
     {
-        $perPage = $search->perPage($request);
+        $perPage = $search->perPage(request: $request);
 
-        $lat = $request->query('lat');
-        $lng = $request->query('lng');
-        $radiusKm = $request->query('radius_km');
+        $lat = $request->query(key: 'lat');
+        $lng = $request->query(key: 'lng');
+        $radiusKm = $request->query(key: 'radius_km');
 
-        $lat1 = $request->query('lat1');
-        $lng1 = $request->query('lng1');
-        $lat2 = $request->query('lat2');
-        $lng2 = $request->query('lng2');
+        $lat1 = $request->query(key: 'lat1');
+        $lng1 = $request->query(key: 'lng1');
+        $lat2 = $request->query(key: 'lat2');
+        $lng2 = $request->query(key: 'lng2');
 
         if ($lat !== null && $lng !== null && $radiusKm !== null) {
             $lat = (float) $lat;
             $lng = (float) $lng;
             $radiusKm = (float) $radiusKm;
-            if (! $this->validLat($lat) || ! $this->validLng($lng) || $radiusKm <= 0) {
+            if (! $this->validLat(lat: $lat) || ! $this->validLng(lng: $lng) || $radiusKm <= 0) {
                 return response()->json(['message' => 'Invalid geo parameters'], 422);
             }
-            $paginator = $search->withinRadius($request, $lat, $lng, $radiusKm, $perPage);
-            return OrganizationResource::collection($paginator);
+            $paginator = $search->withinRadius(request: $request, lat: $lat, lng: $lng, radiusKm: $radiusKm, perPage: $perPage);
+            return OrganizationResource::collection(resource: $paginator);
         }
 
         if ($lat1 !== null && $lng1 !== null && $lat2 !== null && $lng2 !== null) {
@@ -82,7 +82,7 @@ class OrganizationController extends Controller
             $lng1 = (float) $lng1;
             $lat2 = (float) $lat2;
             $lng2 = (float) $lng2;
-            if (! $this->validLat($lat1) || ! $this->validLat($lat2) || ! $this->validLng($lng1) || ! $this->validLng($lng2)) {
+            if (! $this->validLat(lat: $lat1) || ! $this->validLat(lat: $lat2) || ! $this->validLng(lng: $lng1) || ! $this->validLng(lng: $lng2)) {
                 return response()->json(['message' => 'Invalid rectangle parameters'], 422);
             }
             $minLat = min($lat1, $lat2);
@@ -90,24 +90,11 @@ class OrganizationController extends Controller
             $minLng = min($lng1, $lng2);
             $maxLng = max($lng1, $lng2);
 
-            $paginator = $search->withinRectangle($request, $lat1, $lng1, $lat2, $lng2, $perPage);
-            return OrganizationResource::collection($paginator);
+            $paginator = $search->withinRectangle(request: $request, lat1: $lat1, lng1: $lng1, lat2: $lat2, lng2: $lng2, perPage: $perPage);
+            return OrganizationResource::collection(resource: $paginator);
         }
 
         return response()->json(['message' => 'Provide either lat,lng,radius_km or lat1,lng1,lat2,lng2'], 422);
-    }
-
-    private function boundingBox(float $lat, float $lng, float $radiusKm): array
-    {
-        $earthRadiusKm = 6371.0;
-        $latDelta = rad2deg($radiusKm / $earthRadiusKm);
-        $lngDelta = rad2deg($radiusKm / $earthRadiusKm / cos(deg2rad($lat)));
-        return [
-            $lat - $latDelta, // minLat
-            $lat + $latDelta, // maxLat
-            $lng - $lngDelta, // minLng
-            $lng + $lngDelta, // maxLng
-        ];
     }
 
     private function validLat(float $lat): bool
@@ -124,14 +111,14 @@ class OrganizationController extends Controller
      */
     public function show(int $organization)
     {
-        $org = Organization::with(['phones', 'activities', 'building'])
-            ->find($organization);
+        $org = Organization::with(relations: ['phones', 'activities', 'building'])
+            ->find(id: $organization);
 
         if (! $org) {
-            abort(404);
+            abort(code: 404);
         }
 
-        return new OrganizationResource($org);
+        return new OrganizationResource(resource: $org);
     }
 
     /**
@@ -141,15 +128,15 @@ class OrganizationController extends Controller
      */
     public function searchByActivity(Request $request, \App\Services\OrganizationSearchService $search)
     {
-        $q = trim((string) $request->query('q', ''));
+        $q = trim(string: (string) $request->query(key: 'q', default: ''));
         if ($q === '') {
             return response()->json(['message' => 'Query parameter q is required'], 422);
         }
 
-        $perPage = $search->perPage($request);
-        $organizations = $search->searchByActivityName($request, $q, app(\App\Services\ActivityTreeService::class), $perPage);
+        $perPage = $search->perPage(request: $request);
+        $organizations = $search->searchByActivityName(request: $request, q: $q, tree: app(abstract: \App\Services\ActivityTreeService::class), perPage: $perPage);
 
-        return OrganizationResource::collection($organizations);
+        return OrganizationResource::collection(resource: $organizations);
     }
 
     /**
@@ -158,15 +145,15 @@ class OrganizationController extends Controller
      */
     public function searchByName(Request $request, \App\Services\OrganizationSearchService $search)
     {
-        $q = trim((string) $request->query('q', ''));
+        $q = trim(string: (string) $request->query(key: 'q', default: ''));
         if ($q === '') {
             return response()->json(['message' => 'Query parameter q is required'], 422);
         }
 
-        $perPage = $search->perPage($request);
-        $organizations = $search->searchByName($request, $q, $perPage);
+        $perPage = $search->perPage(request: $request);
+        $organizations = $search->searchByName(request: $request, q: $q, perPage: $perPage);
 
-        return OrganizationResource::collection($organizations);
+        return OrganizationResource::collection(resource: $organizations);
     }
 
     // hasPgTrgm moved to OrganizationSearchService

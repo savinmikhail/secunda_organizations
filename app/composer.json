@@ -18,7 +18,10 @@
         "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
-        "phpunit/phpunit": "^11.5.3"
+        "phpunit/phpunit": "^11.5.3",
+        "rector/rector": "^2.1",
+        "savinmikhail/add_named_arguments_rector": "^0.1.19",
+        "savinmikhail/enforce-aaa-pattern-rector": "^0.1.7"
     },
     "autoload": {
         "psr-4": {

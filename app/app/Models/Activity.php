@@ -42,17 +42,17 @@ class Activity extends Model
 
     public function parent()
     {
-        return $this->belongsTo(Activity::class, 'parent_id');
+        return $this->belongsTo(related: Activity::class, foreignKey: 'parent_id');
     }
 
     public function children()
     {
-        return $this->hasMany(Activity::class, 'parent_id');
+        return $this->hasMany(related: Activity::class, foreignKey: 'parent_id');
     }
 
     public function organizations()
     {
-        return $this->belongsToMany(Organization::class, 'activity_organization');
+        return $this->belongsToMany(related: Organization::class, table: 'activity_organization');
     }
 
     protected static function booted(): void
@@ -66,7 +66,7 @@ class Activity extends Model
             if ($model->parent_id) {
                 $parent = static::query()->find($model->parent_id);
                 if (! $parent) {
-                    throw new \DomainException('Parent activity not found');
+                    throw new \DomainException(message: 'Parent activity not found');
                 }
                 $model->level = (int) $parent->level + 1;
             } else {
@@ -74,7 +74,7 @@ class Activity extends Model
             }
 
             if ($model->level < 1 || $model->level > 3) {
-                throw new \DomainException('Activities depth limit (3) exceeded');
+                throw new \DomainException(message: 'Activities depth limit (3) exceeded');
             }
         });
     }

@@ -39,6 +39,6 @@ class Building extends Model
 
     public function organizations()
     {
-        return $this->hasMany(Organization::class);
+        return $this->hasMany(related: Organization::class);
     }
 }

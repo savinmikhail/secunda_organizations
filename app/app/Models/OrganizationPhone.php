@@ -30,6 +30,6 @@ class OrganizationPhone extends Model
 
     public function organization()
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsTo(related: Organization::class);
     }
 }

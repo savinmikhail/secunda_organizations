@@ -16,8 +16,8 @@ class OrganizationShowTest extends TestCase
     public function test_shows_organization_details(): void
     {
         $building = Building::factory()->create();
-        $activity = Activity::factory()->create(['name' => 'Еда', 'level' => 1]);
-        $org = Organization::factory()->create([
+        $activity = Activity::factory()->create(attributes: ['name' => 'Еда', 'level' => 1]);
+        $org = Organization::factory()->create(attributes: [
             'name' => 'Test Org',
             'building_id' => $building->id,
         ]);
@@ -26,19 +26,19 @@ class OrganizationShowTest extends TestCase
         OrganizationPhone::create(['organization_id' => $org->id, 'phone' => '8-900-000-00-01']);
         OrganizationPhone::create(['organization_id' => $org->id, 'phone' => '8-900-000-00-02']);
 
-        $res = $this->getJson(route('organizations.show', ['organization' => $org->id]));
+        $res = $this->getJson(route(name: 'organizations.show', parameters: ['organization' => $org->id]));
 
         $res->assertOk()
-            ->assertJsonPath('data.id', $org->id)
-            ->assertJsonPath('data.name', 'Test Org')
-            ->assertJsonPath('data.building_id', $building->id)
-            ->assertJsonPath('data.phones', ['8-900-000-00-01', '8-900-000-00-02'])
-            ->assertJsonFragment(['name' => 'Еда']);
+            ->assertJsonPath(path: 'data.id', expect: $org->id)
+            ->assertJsonPath(path: 'data.name', expect: 'Test Org')
+            ->assertJsonPath(path: 'data.building_id', expect: $building->id)
+            ->assertJsonPath(path: 'data.phones', expect: ['8-900-000-00-01', '8-900-000-00-02'])
+            ->assertJsonFragment(data: ['name' => 'Еда']);
     }
 
     public function test_returns_404_for_nonexistent(): void
     {
-        $this->getJson(route('organizations.show', ['organization' => 999999]))
-            ->assertStatus(404);
+        $this->getJson(route(name: 'organizations.show', parameters: ['organization' => 999999]))
+            ->assertStatus(status: 404);
     }
 }

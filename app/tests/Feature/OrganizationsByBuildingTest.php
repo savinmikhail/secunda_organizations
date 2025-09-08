@@ -16,42 +16,42 @@ class OrganizationsByBuildingTest extends TestCase
         $building = Building::factory()->create();
         $other = Building::factory()->create();
 
-        $orgA = Organization::factory()->create(['name' => 'Org A', 'building_id' => $building->id]);
-        $orgB = Organization::factory()->create(['name' => 'Org B', 'building_id' => $building->id]);
-        Organization::factory()->create(['name' => 'Other Org', 'building_id' => $other->id]);
+        Organization::factory()->create(attributes: ['name' => 'Org A', 'building_id' => $building->id]);
+        Organization::factory()->create(attributes: ['name' => 'Org B', 'building_id' => $building->id]);
+        Organization::factory()->create(attributes: ['name' => 'Other Org', 'building_id' => $other->id]);
 
-        $res = $this->getJson(route('buildings.organizations.index', ['building' => $building->id]));
+        $res = $this->getJson(route(name: 'buildings.organizations.index', parameters: ['building' => $building->id]));
 
         $res->assertOk()
-            ->assertJsonCount(2, 'data')
-            ->assertJsonFragment(['name' => 'Org A'])
-            ->assertJsonFragment(['name' => 'Org B'])
-            ->assertJsonMissing(['name' => 'Other Org']);
+            ->assertJsonCount(count: 2, key: 'data')
+            ->assertJsonFragment(data: ['name' => 'Org A'])
+            ->assertJsonFragment(data: ['name' => 'Org B'])
+            ->assertJsonMissing(data: ['name' => 'Other Org']);
     }
 
     public function test_paginates_results(): void
     {
         $building = Building::factory()->create();
-        Organization::factory()->count(25)->create(['building_id' => $building->id]);
+        Organization::factory()->count(count: 25)->create(attributes: ['building_id' => $building->id]);
 
-        $res = $this->getJson(route('buildings.organizations.index', ['building' => $building->id, 'per_page' => 10]));
+        $res = $this->getJson(route(name: 'buildings.organizations.index', parameters: ['building' => $building->id, 'per_page' => 10]));
 
         $res->assertOk()
-            ->assertJsonCount(10, 'data')
-            ->assertJsonPath('meta.total', 25)
-            ->assertJsonPath('meta.per_page', 10);
+            ->assertJsonCount(count: 10, key: 'data')
+            ->assertJsonPath(path: 'meta.total', expect: 25)
+            ->assertJsonPath(path: 'meta.per_page', expect: 10);
     }
 
     public function test_nonexistent_building_returns_404(): void
     {
-        $res = $this->getJson(route('buildings.organizations.index', ['building' => 999999]));
-        $res->assertStatus(404);
+        $res = $this->getJson(route(name: 'buildings.organizations.index', parameters: ['building' => 999999]));
+        $res->assertStatus(status: 404);
     }
 
     public function test_existing_building_with_no_orgs_returns_empty_list(): void
     {
         $building = Building::factory()->create();
-        $res = $this->getJson(route('buildings.organizations.index', ['building' => $building->id]));
-        $res->assertOk()->assertJsonCount(0, 'data');
+        $res = $this->getJson(route(name: 'buildings.organizations.index', parameters: ['building' => $building->id]));
+        $res->assertOk()->assertJsonCount(count: 0, key: 'data');
     }
 }

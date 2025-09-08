@@ -39,16 +39,16 @@ class Organization extends Model
 
     public function building()
     {
-        return $this->belongsTo(Building::class);
+        return $this->belongsTo(related: Building::class);
     }
 
     public function phones()
     {
-        return $this->hasMany(OrganizationPhone::class);
+        return $this->hasMany(related: OrganizationPhone::class);
     }
 
     public function activities()
     {
-        return $this->belongsToMany(Activity::class, 'activity_organization');
+        return $this->belongsToMany(related: Activity::class, table: 'activity_organization');
     }
 }

@@ -11,3 +11,5 @@ cs:
 php:
 	docker compose exec php bash
 
+rector:
+	docker compose exec php sh -c 'vendor/bin/rector'
