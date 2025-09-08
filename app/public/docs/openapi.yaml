@@ -1,0 +1,240 @@
+openapi: 3.0.3
+info:
+  title: Secunda Organizations API
+  version: 1.0.0
+  description: |
+    REST API for Organizations, Buildings, and Activities.
+    Secured by a static API key via the `X-API-Key` header.
+servers:
+  - url: /api
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    ActivityRef:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        level:
+          type: integer
+          minimum: 1
+          maximum: 3
+    Organization:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        building_id:
+          type: integer
+        distance_km:
+          type: number
+          format: float
+          nullable: true
+          description: Present only for radius geo queries.
+        phones:
+          type: array
+          items:
+            type: string
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityRef'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Building:
+      type: object
+      properties:
+        id:
+          type: integer
+        address:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaginatedOrganizations:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+        links:
+          type: object
+        meta:
+          type: object
+    PaginatedBuildings:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Building'
+        links:
+          type: object
+        meta:
+          type: object
+paths:
+  /buildings:
+    get:
+      summary: List buildings
+      parameters:
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Paginated buildings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBuildings'
+  /buildings/{building}/organizations:
+    get:
+      summary: List organizations in a building
+      parameters:
+        - in: path
+          name: building
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: Paginated organizations, content: { application/json: { schema: { $ref: '#/components/schemas/PaginatedOrganizations' } } } }
+        '404': { description: Building not found }
+  /activities/{activity}/organizations:
+    get:
+      summary: List organizations by activity (includes descendants)
+      parameters:
+        - in: path
+          name: activity
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: Paginated organizations, content: { application/json: { schema: { $ref: '#/components/schemas/PaginatedOrganizations' } } } }
+        '404': { description: Activity not found }
+  /organizations/geo:
+    get:
+      summary: List organizations by geo (radius or rectangle)
+      description: |
+        Provide either radius search parameters or rectangle parameters.
+        - Radius: `lat`, `lng`, `radius_km` (distance on Earth sphere)
+        - Rectangle: `lat1`, `lng1`, `lat2`, `lng2`
+      parameters:
+        - in: query
+          name: lat
+          schema: { type: number, format: float }
+        - in: query
+          name: lng
+          schema: { type: number, format: float }
+        - in: query
+          name: radius_km
+          schema: { type: number, format: float, minimum: 0.001 }
+        - in: query
+          name: lat1
+          schema: { type: number, format: float }
+        - in: query
+          name: lng1
+          schema: { type: number, format: float }
+        - in: query
+          name: lat2
+          schema: { type: number, format: float }
+        - in: query
+          name: lng2
+          schema: { type: number, format: float }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: Paginated organizations, content: { application/json: { schema: { $ref: '#/components/schemas/PaginatedOrganizations' } } } }
+        '422': { description: Invalid parameters }
+  /organizations/{organization}:
+    get:
+      summary: Show organization by ID
+      parameters:
+        - in: path
+          name: organization
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Organization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Organization'
+        '404': { description: Organization not found }
+  /organizations/search/activity:
+    get:
+      summary: Search organizations by activity name (includes descendants)
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: Paginated organizations, content: { application/json: { schema: { $ref: '#/components/schemas/PaginatedOrganizations' } } } }
+  /organizations/search/name:
+    get:
+      summary: Search organizations by name (case-insensitive, fuzzy on PG)
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: Paginated organizations, content: { application/json: { schema: { $ref: '#/components/schemas/PaginatedOrganizations' } } } }
+
