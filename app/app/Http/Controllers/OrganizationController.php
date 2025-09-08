@@ -16,8 +16,12 @@ class OrganizationController extends Controller
     public function indexByBuilding(Request $request, int $building)
     {
         $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) { $perPage = 15; }
-        if ($perPage > 100) { $perPage = 100; }
+        if ($perPage < 1) {
+            $perPage = 15;
+        }
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
 
         $query = Organization::with(['phones', 'activities'])
             ->where('building_id', $building)
@@ -38,8 +42,12 @@ class OrganizationController extends Controller
     public function indexByActivity(Request $request, int $activity)
     {
         $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) { $perPage = 15; }
-        if ($perPage > 100) { $perPage = 100; }
+        if ($perPage < 1) {
+            $perPage = 15;
+        }
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
 
         $activityIds = $this->collectActivityIdsWithDescendants($activity);
 
@@ -76,4 +84,3 @@ class OrganizationController extends Controller
         return $all;
     }
 }
-

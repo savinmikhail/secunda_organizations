@@ -7,7 +7,7 @@ ARG APP_ENV=prod
 
 ENV APP_ENV=${APP_ENV}
 
-WORKDIR /app
+WORKDIR /app/app
 
 # Copy application source from build context
 COPY . /app
