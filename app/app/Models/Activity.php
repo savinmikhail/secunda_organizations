@@ -54,4 +54,28 @@ class Activity extends Model
     {
         return $this->belongsToMany(Organization::class, 'activity_organization');
     }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $model) {
+            // Normalize parent_id
+            if ($model->parent_id === 0) {
+                $model->parent_id = null;
+            }
+
+            if ($model->parent_id) {
+                $parent = static::query()->find($model->parent_id);
+                if (! $parent) {
+                    throw new \DomainException('Parent activity not found');
+                }
+                $model->level = (int) $parent->level + 1;
+            } else {
+                $model->level = 1;
+            }
+
+            if ($model->level < 1 || $model->level > 3) {
+                throw new \DomainException('Activities depth limit (3) exceeded');
+            }
+        });
+    }
 }
