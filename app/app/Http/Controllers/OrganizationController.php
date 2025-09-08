@@ -16,21 +16,10 @@ class OrganizationController extends Controller
     /**
      * List organizations located in a specific building.
      */
-    public function indexByBuilding(Request $request, int $building)
+    public function indexByBuilding(Request $request, int $building, \App\Services\OrganizationSearchService $search)
     {
-        $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) {
-            $perPage = 15;
-        }
-        if ($perPage > 100) {
-            $perPage = 100;
-        }
-
-        $query = Organization::with(['phones', 'activities'])
-            ->where('building_id', $building)
-            ->orderBy('name');
-
-        $organizations = $query->paginate($perPage)->appends($request->query());
+        $perPage = $search->perPage($request);
+        $organizations = $search->byBuilding($request, $building, $perPage);
 
         if ($organizations->isEmpty() && ! Building::whereKey($building)->exists()) {
             abort(404);
@@ -42,25 +31,11 @@ class OrganizationController extends Controller
     /**
      * List organizations related to a given activity (including descendants).
      */
-    public function indexByActivity(Request $request, int $activity)
+    public function indexByActivity(Request $request, int $activity, \App\Services\OrganizationSearchService $search, \App\Services\ActivityTreeService $tree)
     {
-        $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) {
-            $perPage = 15;
-        }
-        if ($perPage > 100) {
-            $perPage = 100;
-        }
-
-        $activityIds = $this->collectActivityIdsWithDescendants($activity);
-
-        $query = Organization::with(['phones', 'activities'])
-            ->whereHas('activities', function ($q) use ($activityIds) {
-                $q->whereIn('activities.id', $activityIds);
-            })
-            ->orderBy('name');
-
-        $organizations = $query->paginate($perPage)->appends($request->query());
+        $perPage = $search->perPage($request);
+        $activityIds = $tree->descendantIds($activity);
+        $organizations = $search->byActivityIds($request, $activityIds, $perPage);
 
         if ($organizations->isEmpty() && ! Activity::whereKey($activity)->exists()) {
             abort(404);
@@ -69,23 +44,7 @@ class OrganizationController extends Controller
         return OrganizationResource::collection($organizations);
     }
 
-    private function collectActivityIdsWithDescendants(int $activityId): array
-    {
-        $all = [$activityId];
-        $frontier = [$activityId];
-
-        while (!empty($frontier)) {
-            $children = Activity::whereIn('parent_id', $frontier)->pluck('id')->all();
-            $children = array_values(array_diff($children, $all));
-            if (empty($children)) {
-                break;
-            }
-            $all = array_merge($all, $children);
-            $frontier = $children;
-        }
-
-        return $all;
-    }
+    // Descendant collecting moved to ActivityTreeService
 
     /**
      * List organizations within a radius from a point or within a rectangular bounding box.
@@ -96,13 +55,7 @@ class OrganizationController extends Controller
      */
     public function indexByGeo(Request $request, OrganizationSearchService $search)
     {
-        $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) {
-            $perPage = 15;
-        }
-        if ($perPage > 100) {
-            $perPage = 100;
-        }
+        $perPage = $search->perPage($request);
 
         $lat = $request->query('lat');
         $lng = $request->query('lng');
@@ -186,45 +139,15 @@ class OrganizationController extends Controller
      * and includes organizations tagged to their descendant activities.
      * Query params: q (required), per_page (default 15, max 100)
      */
-    public function searchByActivity(Request $request)
+    public function searchByActivity(Request $request, \App\Services\OrganizationSearchService $search)
     {
         $q = trim((string) $request->query('q', ''));
         if ($q === '') {
             return response()->json(['message' => 'Query parameter q is required'], 422);
         }
 
-        $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) {
-            $perPage = 15;
-        }
-        if ($perPage > 100) {
-            $perPage = 100;
-        }
-
-        $matched = Activity::query()
-            ->where('name', 'like', "%$q%")
-            ->pluck('id')
-            ->all();
-
-        if (empty($matched)) {
-            // Return empty paginator shape for consistency
-            $empty = Organization::query()->whereRaw('1 = 0')->paginate($perPage);
-            return OrganizationResource::collection($empty);
-        }
-
-        $ids = [];
-        foreach ($matched as $id) {
-            $ids = array_merge($ids, $this->collectActivityIdsWithDescendants((int) $id));
-        }
-        $ids = array_values(array_unique($ids));
-
-        $organizations = Organization::with(['phones', 'activities'])
-            ->whereHas('activities', function ($q2) use ($ids) {
-                $q2->whereIn('activities.id', $ids);
-            })
-            ->orderBy('name')
-            ->paginate($perPage)
-            ->appends($request->query());
+        $perPage = $search->perPage($request);
+        $organizations = $search->searchByActivityName($request, $q, app(\App\Services\ActivityTreeService::class), $perPage);
 
         return OrganizationResource::collection($organizations);
     }
@@ -233,52 +156,18 @@ class OrganizationController extends Controller
      * Search organizations by name (case-insensitive substring).
      * Query params: q (required), per_page (default 15, max 100)
      */
-    public function searchByName(Request $request)
+    public function searchByName(Request $request, \App\Services\OrganizationSearchService $search)
     {
         $q = trim((string) $request->query('q', ''));
         if ($q === '') {
             return response()->json(['message' => 'Query parameter q is required'], 422);
         }
 
-        $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) {
-            $perPage = 15;
-        }
-        if ($perPage > 100) {
-            $perPage = 100;
-        }
-
-        $query = Organization::with(['phones', 'activities']);
-
-        if ($this->hasPgTrgm()) {
-            // PostgreSQL trigram fuzzy search when extension is available
-            $query->where(function ($sub) use ($q) {
-                $sub->whereRaw('name % ?', [$q])
-                    ->orWhereRaw('name ILIKE ?', ['%'.$q.'%']);
-            })
-            ->orderByRaw('similarity(name, ?) DESC, name ASC', [$q]);
-        } else {
-            // Portable case-insensitive substring search
-            $needle = mb_strtolower($q, 'UTF-8');
-            $query->whereRaw('LOWER(name) LIKE ?', ['%'.$needle.'%'])
-                  ->orderBy('name');
-        }
-
-        $organizations = $query->paginate($perPage)->appends($request->query());
+        $perPage = $search->perPage($request);
+        $organizations = $search->searchByName($request, $q, $perPage);
 
         return OrganizationResource::collection($organizations);
     }
 
-    private function hasPgTrgm(): bool
-    {
-        try {
-            if (DB::getDriverName() !== 'pgsql') {
-                return false;
-            }
-            $row = DB::selectOne("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm') AS installed");
-            return (bool) ($row->installed ?? false);
-        } catch (\Throwable $e) {
-            return false;
-        }
-    }
+    // hasPgTrgm moved to OrganizationSearchService
 }
