@@ -2,9 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\BuildingController;
 
 // Secured by static API key via X-API-Key header
 Route::middleware('apikey')->group(function () {
+    // List buildings
+    Route::get('/buildings', [BuildingController::class, 'index'])->name('buildings.index');
+
     Route::get('/buildings/{building}/organizations', [OrganizationController::class, 'indexByBuilding'])
         ->name('buildings.organizations.index');
 
