@@ -147,4 +147,19 @@ class OrganizationController extends Controller
 
     private function validLat(float $lat): bool { return $lat >= -90 && $lat <= 90; }
     private function validLng(float $lng): bool { return $lng >= -180 && $lng <= 180; }
+
+    /**
+     * Show organization details by ID.
+     */
+    public function show(int $organization)
+    {
+        $org = Organization::with(['phones', 'activities', 'building'])
+            ->find($organization);
+
+        if (! $org) {
+            abort(404);
+        }
+
+        return new OrganizationResource($org);
+    }
 }

@@ -19,4 +19,8 @@ Route::middleware('apikey')->group(function () {
     // List organizations by geo (radius or rectangle)
     Route::get('/organizations/geo', [OrganizationController::class, 'indexByGeo'])
         ->name('organizations.geo');
+
+    // Show organization details by ID
+    Route::get('/organizations/{organization}', [OrganizationController::class, 'show'])
+        ->name('organizations.show');
 });
