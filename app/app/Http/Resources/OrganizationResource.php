@@ -18,6 +18,7 @@ class OrganizationResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'building_id' => $this->building_id,
+            'distance_km' => $this->when(isset($this->distance_km), fn () => round((float) $this->distance_km, 3)),
             'phones' => $this->whenLoaded('phones', fn () => $this->phones->pluck('phone')->all()),
             'activities' => $this->whenLoaded('activities', fn () => $this->activities->map(fn ($a) => [
                 'id' => $a->id,
