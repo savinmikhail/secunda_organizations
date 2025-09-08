@@ -9,6 +9,7 @@ use App\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\OrganizationSearchService;
+use Illuminate\Support\Facades\DB;
 
 class OrganizationController extends Controller
 {
@@ -205,5 +206,54 @@ class OrganizationController extends Controller
             ->appends($request->query());
 
         return OrganizationResource::collection($organizations);
+    }
+
+    /**
+     * Search organizations by name (case-insensitive substring).
+     * Query params: q (required), per_page (default 15, max 100)
+     */
+    public function searchByName(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if ($q === '') {
+            return response()->json(['message' => 'Query parameter q is required'], 422);
+        }
+
+        $perPage = (int) $request->query('per_page', 15);
+        if ($perPage < 1) { $perPage = 15; }
+        if ($perPage > 100) { $perPage = 100; }
+
+        $query = Organization::with(['phones', 'activities']);
+
+        if ($this->hasPgTrgm()) {
+            // PostgreSQL trigram fuzzy search when extension is available
+            $query->where(function ($sub) use ($q) {
+                $sub->whereRaw('name % ?', [$q])
+                    ->orWhereRaw('name ILIKE ?', ['%'.$q.'%']);
+            })
+            ->orderByRaw('similarity(name, ?) DESC, name ASC', [$q]);
+        } else {
+            // Portable case-insensitive substring search
+            $needle = mb_strtolower($q, 'UTF-8');
+            $query->whereRaw('LOWER(name) LIKE ?', ['%'.$needle.'%'])
+                  ->orderBy('name');
+        }
+
+        $organizations = $query->paginate($perPage)->appends($request->query());
+
+        return OrganizationResource::collection($organizations);
+    }
+
+    private function hasPgTrgm(): bool
+    {
+        try {
+            if (DB::getDriverName() !== 'pgsql') {
+                return false;
+            }
+            $row = DB::selectOne("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm') AS installed");
+            return (bool) ($row->installed ?? false);
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 }

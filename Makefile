@@ -26,8 +26,16 @@ ide-docker:
 		php artisan ide-helper:models --write --reset -N && \\
 		php artisan ide-helper:meta'
 
+# Run test suite in Docker against postgres_test
+test-docker:
+	docker compose up -d postgres_test php && \
+	until docker compose exec -T postgres_test pg_isready -U dmcrm_test -d dmcrm_test > /dev/null 2>&1; do \
+		echo 'waiting for postgres_test...'; sleep 1; \
+	done && \
+	docker compose exec php sh -lc 'composer install && php artisan test'
+
 test:
-	docker compose exec php sh -c 'vendor/bin/phpunit'
+	docker compose exec php sh -c 'php artisan test '
 
 cs:
 	docker compose exec php sh -c 'vendor/bin/php-cs-fixer fix --diff'

@@ -13,9 +13,6 @@ class OrganizationsByGeoTest extends TestCase
 
     public function test_rectangle_filters_organizations(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('PostgreSQL-only geo test');
-        }
         $b1 = Building::factory()->create(['latitude' => 55.0000, 'longitude' => 37.0000]);
         $b2 = Building::factory()->create(['latitude' => 55.0100, 'longitude' => 37.0100]);
         $b3 = Building::factory()->create(['latitude' => 55.1000, 'longitude' => 37.1000]);
@@ -37,9 +34,6 @@ class OrganizationsByGeoTest extends TestCase
 
     public function test_radius_filters_organizations(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('PostgreSQL-only geo test');
-        }
         $centerLat = 55.0000; $centerLng = 37.0000;
         $b1 = Building::factory()->create(['latitude' => $centerLat, 'longitude' => $centerLng]);
         // ~1.11 km north

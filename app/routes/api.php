@@ -20,6 +20,10 @@ Route::middleware('apikey')->group(function () {
     Route::get('/organizations/search/activity', [OrganizationController::class, 'searchByActivity'])
         ->name('organizations.search.activity');
 
+    // Search organizations by name (case-insensitive substring)
+    Route::get('/organizations/search/name', [OrganizationController::class, 'searchByName'])
+        ->name('organizations.search.name');
+
     // List organizations by geo (radius or rectangle)
     Route::get('/organizations/geo', [OrganizationController::class, 'indexByGeo'])
         ->name('organizations.geo');
