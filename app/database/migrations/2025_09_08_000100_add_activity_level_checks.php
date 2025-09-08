@@ -3,8 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         DB::statement("ALTER TABLE activities ADD CONSTRAINT activities_level_range CHECK (level >= 1 AND level <= 3)");
@@ -17,4 +16,3 @@ return new class extends Migration
         DB::statement("ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_level_range");
     }
 };
-

@@ -11,8 +11,12 @@ class BuildingController extends Controller
     public function index(Request $request)
     {
         $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) { $perPage = 15; }
-        if ($perPage > 100) { $perPage = 100; }
+        if ($perPage < 1) {
+            $perPage = 15;
+        }
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
 
         $buildings = Building::query()
             ->orderBy('address')
@@ -22,4 +26,3 @@ class BuildingController extends Controller
         return BuildingResource::collection($buildings);
     }
 }
-

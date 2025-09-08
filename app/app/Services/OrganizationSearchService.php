@@ -12,8 +12,10 @@ class OrganizationSearchService
 {
     public function withinRectangle(Request $request, float $lat1, float $lng1, float $lat2, float $lng2, int $perPage = 15): LengthAwarePaginator
     {
-        $minLat = min($lat1, $lat2); $maxLat = max($lat1, $lat2);
-        $minLng = min($lng1, $lng2); $maxLng = max($lng1, $lng2);
+        $minLat = min($lat1, $lat2);
+        $maxLat = max($lat1, $lat2);
+        $minLng = min($lng1, $lng2);
+        $maxLng = max($lng1, $lng2);
 
         $query = $this->baseQuery()
             ->whereBetween('buildings.latitude', [$minLat, $maxLat])

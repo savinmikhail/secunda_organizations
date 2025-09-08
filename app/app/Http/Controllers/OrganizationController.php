@@ -97,8 +97,12 @@ class OrganizationController extends Controller
     public function indexByGeo(Request $request, OrganizationSearchService $search)
     {
         $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) { $perPage = 15; }
-        if ($perPage > 100) { $perPage = 100; }
+        if ($perPage < 1) {
+            $perPage = 15;
+        }
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
 
         $lat = $request->query('lat');
         $lng = $request->query('lng');
@@ -110,7 +114,9 @@ class OrganizationController extends Controller
         $lng2 = $request->query('lng2');
 
         if ($lat !== null && $lng !== null && $radiusKm !== null) {
-            $lat = (float) $lat; $lng = (float) $lng; $radiusKm = (float) $radiusKm;
+            $lat = (float) $lat;
+            $lng = (float) $lng;
+            $radiusKm = (float) $radiusKm;
             if (! $this->validLat($lat) || ! $this->validLng($lng) || $radiusKm <= 0) {
                 return response()->json(['message' => 'Invalid geo parameters'], 422);
             }
@@ -119,12 +125,17 @@ class OrganizationController extends Controller
         }
 
         if ($lat1 !== null && $lng1 !== null && $lat2 !== null && $lng2 !== null) {
-            $lat1 = (float) $lat1; $lng1 = (float) $lng1; $lat2 = (float) $lat2; $lng2 = (float) $lng2;
+            $lat1 = (float) $lat1;
+            $lng1 = (float) $lng1;
+            $lat2 = (float) $lat2;
+            $lng2 = (float) $lng2;
             if (! $this->validLat($lat1) || ! $this->validLat($lat2) || ! $this->validLng($lng1) || ! $this->validLng($lng2)) {
                 return response()->json(['message' => 'Invalid rectangle parameters'], 422);
             }
-            $minLat = min($lat1, $lat2); $maxLat = max($lat1, $lat2);
-            $minLng = min($lng1, $lng2); $maxLng = max($lng1, $lng2);
+            $minLat = min($lat1, $lat2);
+            $maxLat = max($lat1, $lat2);
+            $minLng = min($lng1, $lng2);
+            $maxLng = max($lng1, $lng2);
 
             $paginator = $search->withinRectangle($request, $lat1, $lng1, $lat2, $lng2, $perPage);
             return OrganizationResource::collection($paginator);
@@ -146,8 +157,14 @@ class OrganizationController extends Controller
         ];
     }
 
-    private function validLat(float $lat): bool { return $lat >= -90 && $lat <= 90; }
-    private function validLng(float $lng): bool { return $lng >= -180 && $lng <= 180; }
+    private function validLat(float $lat): bool
+    {
+        return $lat >= -90 && $lat <= 90;
+    }
+    private function validLng(float $lng): bool
+    {
+        return $lng >= -180 && $lng <= 180;
+    }
 
     /**
      * Show organization details by ID.
@@ -177,8 +194,12 @@ class OrganizationController extends Controller
         }
 
         $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) { $perPage = 15; }
-        if ($perPage > 100) { $perPage = 100; }
+        if ($perPage < 1) {
+            $perPage = 15;
+        }
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
 
         $matched = Activity::query()
             ->where('name', 'like', "%$q%")
@@ -220,8 +241,12 @@ class OrganizationController extends Controller
         }
 
         $perPage = (int) $request->query('per_page', 15);
-        if ($perPage < 1) { $perPage = 15; }
-        if ($perPage > 100) { $perPage = 100; }
+        if ($perPage < 1) {
+            $perPage = 15;
+        }
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
 
         $query = Organization::with(['phones', 'activities']);
 

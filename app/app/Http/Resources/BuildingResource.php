@@ -19,4 +19,3 @@ class BuildingResource extends JsonResource
         ];
     }
 }
-
