@@ -16,6 +16,10 @@ Route::middleware('apikey')->group(function () {
     Route::get('/activities/{activity}/organizations', [OrganizationController::class, 'indexByActivity'])
         ->name('activities.organizations.index');
 
+    // Search organizations by activity name (includes descendants)
+    Route::get('/organizations/search/activity', [OrganizationController::class, 'searchByActivity'])
+        ->name('organizations.search.activity');
+
     // List organizations by geo (radius or rectangle)
     Route::get('/organizations/geo', [OrganizationController::class, 'indexByGeo'])
         ->name('organizations.geo');

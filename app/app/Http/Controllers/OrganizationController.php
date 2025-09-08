@@ -162,4 +162,48 @@ class OrganizationController extends Controller
 
         return new OrganizationResource($org);
     }
+
+    /**
+     * Search organizations by activity name. Matches activities by name
+     * and includes organizations tagged to their descendant activities.
+     * Query params: q (required), per_page (default 15, max 100)
+     */
+    public function searchByActivity(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if ($q === '') {
+            return response()->json(['message' => 'Query parameter q is required'], 422);
+        }
+
+        $perPage = (int) $request->query('per_page', 15);
+        if ($perPage < 1) { $perPage = 15; }
+        if ($perPage > 100) { $perPage = 100; }
+
+        $matched = Activity::query()
+            ->where('name', 'like', "%$q%")
+            ->pluck('id')
+            ->all();
+
+        if (empty($matched)) {
+            // Return empty paginator shape for consistency
+            $empty = Organization::query()->whereRaw('1 = 0')->paginate($perPage);
+            return OrganizationResource::collection($empty);
+        }
+
+        $ids = [];
+        foreach ($matched as $id) {
+            $ids = array_merge($ids, $this->collectActivityIdsWithDescendants((int) $id));
+        }
+        $ids = array_values(array_unique($ids));
+
+        $organizations = Organization::with(['phones', 'activities'])
+            ->whereHas('activities', function ($q2) use ($ids) {
+                $q2->whereIn('activities.id', $ids);
+            })
+            ->orderBy('name')
+            ->paginate($perPage)
+            ->appends($request->query());
+
+        return OrganizationResource::collection($organizations);
+    }
 }
